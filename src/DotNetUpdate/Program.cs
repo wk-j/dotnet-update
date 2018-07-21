@@ -4,9 +4,26 @@ using System.Linq;
 using System.Threading.Tasks;
 using NuGet.Versioning;
 using System.IO;
+using System.Diagnostics;
 
 namespace DotNetUpdate {
     class Program {
+
+        static void Update(string project, string package) {
+            var args = $"add {project} package {package}";
+
+            var process = new Process();
+            process.StartInfo = new ProcessStartInfo {
+                Arguments = args,
+                FileName = "dotnet",
+                UseShellExecute = false,
+                RedirectStandardOutput = true
+            };
+
+            process.Start();
+            process.WaitForExit();
+        }
+
 
         static async Task<bool> ProcessPackage(NuGetClient nuget, Dependency d) {
             var packages = await nuget.GetPackageInfo(d.Include.ToLower());
@@ -14,10 +31,11 @@ namespace DotNetUpdate {
             var latestVersion = latest.ToString();
             if (string.Compare(d.Version, latestVersion) < 0) {
                 Console.WriteLine($" Update {d.Include} from {d.Version} to {latestVersion}");
+                return true;
             } else {
                 Console.WriteLine($" Skip {d.Include} {d.Version}");
+                return false;
             }
-            return true;
         }
 
         static async Task ProcessProject(string project) {
@@ -27,9 +45,13 @@ namespace DotNetUpdate {
                 var nuget = new NuGetClient(client);
                 foreach (var item in refs) {
                     try {
-                        _ = await ProcessPackage(nuget, item);
-                    } catch (Exception) {
+                        var update = await ProcessPackage(nuget, item);
+                        if (update) {
+                            Update(project, item.Include);
+                        }
+                    } catch (Exception e) {
                         Console.WriteLine($" ~ Failed {item.Include}");
+                        Console.WriteLine($" ~ {e.Message}");
                     }
                 }
             }
