@@ -4,6 +4,8 @@ using System.Threading.Tasks;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using System.Linq;
+using NuGet.Versioning;
+using System;
 
 namespace DotNetUpdate {
     public class NuGetClient {
@@ -12,7 +14,7 @@ namespace DotNetUpdate {
             httpClient = client;
         }
 
-        private async Task<JObject> GetPackageObject(string name) {
+        private async Task<JObject> GetResource(string name) {
             var response = await httpClient.GetAsync($"http://api.nuget.org/v3/registration3/{name}/index.json");
             if (response.IsSuccessStatusCode) {
                 return JObject.Parse(await response.Content.ReadAsStringAsync());
@@ -20,17 +22,45 @@ namespace DotNetUpdate {
             return null;
         }
 
-        public async Task<IEnumerable<Package>> GetPackage(string name) {
-            var obj = await GetPackageObject(name);
-            var items = obj["items"][0]["items"];
-            var data = items.Select(x => {
-                var v = (string)x["catalogEntry"]["version"];
-                return new Package {
-                    Version = v,
-                    Id = (string)x["catalogEntry"]["id"]
-                };
-            });
-            return data;
+        public async Task<PackageInfo> GetPackageInfo(string packageName) {
+            var json = await this.GetResource(packageName.ToLower());
+
+            if (json == null) {
+                return null;
+            }
+            var versions = new List<SemanticVersion>();
+
+            var items = json["items"].AsJEnumerable();
+            if (items[0]["items"] != null) {
+                foreach (var item in items) {
+                    versions.AddRange(this.ExtractVersions(item["items"]));
+                }
+            } else {
+                var requests = items.Select(i => {
+                    var id = i["@id"].ToString();
+                    var resourceName = id.Substring(id.IndexOf(packageName.ToLower()));
+                    return this.GetResource(resourceName);
+                });
+
+                var pages = await Task.WhenAll(requests);
+                foreach (var page in pages)
+                    versions.AddRange(this.ExtractVersions(page["items"]));
+            }
+
+            versions.Reverse();
+            return new PackageInfo(packageName, versions);
+        }
+
+        private IEnumerable<SemanticVersion> ExtractVersions(JToken items) {
+            foreach (var item in items) {
+                bool listed = Convert.ToBoolean(item["catalogEntry"]["listed"].ToString());
+                if (!listed)
+                    continue;
+
+                SemanticVersion version;
+                if (SemanticVersion.TryParse(item["catalogEntry"]["version"].ToString(), out version))
+                    yield return version;
+            }
         }
     }
 }

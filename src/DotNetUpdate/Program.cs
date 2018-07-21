@@ -2,29 +2,47 @@
 using System.Net.Http;
 using System.Linq;
 using System.Threading.Tasks;
+using NuGet.Versioning;
+using System.IO;
 
 namespace DotNetUpdate {
     class Program {
 
-        static void Process(string includeVersion, Package package) {
-            if (string.Compare(includeVersion, package.Version) < 0) {
-                Console.WriteLine($" Update {package.Id} from {includeVersion} {package.Version}");
+        static async Task<bool> ProcessPackage(NuGetClient nuget, Dependency d) {
+            var packages = await nuget.GetPackageInfo(d.Include.ToLower());
+            var latest = packages.Versions.First(x => !x.IsPrerelease);
+            var latestVersion = latest.ToString();
+            if (string.Compare(d.Version, latestVersion) < 0) {
+                Console.WriteLine($" Update {d.Include} from {d.Version} to {latestVersion}");
             } else {
-                Console.WriteLine($" Skip {package.Id} {includeVersion}");
+                Console.WriteLine($" Skip {d.Include} {d.Version}");
             }
+            return true;
         }
 
-        static async Task Main(string[] args) {
-            var project = @"/Users/wk/Source/DotNetUpdate/tests/MyApp/MyApp.csproj";
+        static async Task ProcessProject(string project) {
+            Console.WriteLine($"Process project {project}");
             var refs = ProjectParser.GetDependencies(project);
             using (var client = new HttpClient()) {
                 var nuget = new NuGetClient(client);
                 foreach (var item in refs) {
-                    Console.WriteLine($"Check {item.Include}");
-                    var packages = await nuget.GetPackage(item.Include.ToLower());
-                    var latest = packages.Last();
-                    Process(item.Version, latest);
+                    try {
+                        _ = await ProcessPackage(nuget, item);
+                    } catch (Exception) {
+                        Console.WriteLine($" ~ Failed {item.Include}");
+                    }
                 }
+            }
+            Console.WriteLine();
+        }
+
+        static async Task Main(string[] args) {
+            var csproj = Directory.EnumerateFiles(".", "*.csproj", SearchOption.AllDirectories);
+            var fsproj = Directory.EnumerateFiles(".", "*.fsproj", SearchOption.AllDirectories);
+            var projects = csproj.Concat(fsproj);
+
+            foreach (var item in projects) {
+                await ProcessProject(item);
             }
         }
     }
