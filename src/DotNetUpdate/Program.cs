@@ -24,12 +24,11 @@ namespace DotNetUpdate {
             process.WaitForExit();
         }
 
-
         static async Task<bool> ProcessPackage(NuGetClient nuget, Dependency d) {
             var packages = await nuget.GetPackageInfo(d.Include.ToLower());
             var latest = packages.Versions.First(x => !x.IsPrerelease);
             var latestVersion = latest.ToString();
-            if (string.Compare(d.Version, latestVersion) < 0) {
+            if (string.Compare(d.Version, latestVersion) < 0 && !String.IsNullOrEmpty(d.Version)) {
                 Console.WriteLine($" Update {d.Include} from {d.Version} to {latestVersion}");
                 return true;
             } else {
