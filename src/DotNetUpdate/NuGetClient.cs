@@ -15,15 +15,18 @@ namespace DotNetUpdate {
         }
 
         private async Task<JObject> GetResource(string name) {
-            var response = await httpClient.GetAsync($"http://api.nuget.org/v3/registration3/{name}/index.json");
+            var url = $"https://api.nuget.org/v3/registration3/{name}";
+            var response = await httpClient.GetAsync(url);
             if (response.IsSuccessStatusCode) {
                 return JObject.Parse(await response.Content.ReadAsStringAsync());
+            } else {
+                Console.WriteLine(await response.Content.ReadAsStringAsync());
+                return null;
             }
-            return null;
         }
 
         public async Task<PackageInfo> GetPackageInfo(string packageName) {
-            var json = await this.GetResource(packageName.ToLower());
+            var json = await this.GetResource(packageName.ToLower() + "/index.json");
 
             if (json == null) {
                 return null;

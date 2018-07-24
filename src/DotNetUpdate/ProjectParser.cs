@@ -13,15 +13,15 @@ namespace DotNetUpdate {
             var xml = File.ReadAllText(project);
             var document = XDocument.Parse(xml);
             var dependencies = document.Descendants("PackageReference")
-                .Select(ProjectParser.GetDependency);
+                .ToList()
+                .Select(GetDependency);
             return dependencies;
         }
 
-        private static Dependency GetDependency(XElement es) {
-            var v = es.Attribute("Version")?.Value;
+        private static Dependency GetDependency(XElement element) {
             return new Dependency {
-                Include = es.Attribute("Include")?.Value,
-                Version = v
+                Include = element.Attribute("Include")?.Value,
+                Version = element.Attribute("Version")?.Value
             };
         }
     }
