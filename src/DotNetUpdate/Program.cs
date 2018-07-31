@@ -49,8 +49,8 @@ namespace DotNetUpdate {
                         }
                     } catch (Exception e) {
                         Console.WriteLine($" ~ Failed {item.Include}");
-                        Console.WriteLine($" ~ {e.Message}");
-                        Console.WriteLine($" ~ {e.StackTrace}");
+                        // Console.WriteLine($" ~ {e.Message}");
+                        // Console.WriteLine($" ~ {e.StackTrace}");
                     }
                 }
             }
