@@ -31,8 +31,14 @@ namespace DotNetUpdate {
                 Console.WriteLine($" Update {dependency.Include} from {dependency.Version} to {latestVersion}");
                 return true;
             } else {
-                Console.WriteLine($" Skip {dependency.Include} {dependency.Version}");
-                return false;
+                var semver = SemanticVersion.Parse(dependency.Version);
+                if (semver.IsPrerelease) {
+                    Console.WriteLine($" Update {dependency.Include} from {dependency.Version} to {latestVersion}");
+                    return true;
+                } else {
+                    Console.WriteLine($" Skip {dependency.Include} {dependency.Version}");
+                    return false;
+                }
             }
         }
 

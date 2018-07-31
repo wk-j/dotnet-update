@@ -4,7 +4,7 @@
         <OutputType>Exe</OutputType>
         <TargetFramework>netcoreapp2.1</TargetFramework>
         <LangVersion>7.2</LangVersion>
-        <Version>0.1.2</Version>
+        <Version>0.1.3</Version>
         <PackAsTool>true</PackAsTool>
         <PackageId>wk.DotNetUpdate</PackageId>
         <ToolCommandName>wk-dotnet-update</ToolCommandName>

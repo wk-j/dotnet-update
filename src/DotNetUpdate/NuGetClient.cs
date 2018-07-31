@@ -20,7 +20,7 @@ namespace DotNetUpdate {
             if (response.IsSuccessStatusCode) {
                 return JObject.Parse(await response.Content.ReadAsStringAsync());
             } else {
-                Console.WriteLine(await response.Content.ReadAsStringAsync());
+                // Console.WriteLine(await response.Content.ReadAsStringAsync());
                 return null;
             }
         }
